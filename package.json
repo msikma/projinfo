@@ -1,0 +1,15 @@
+{
+  "name": "projinfo",
+  "version": "1.0.0",
+  "description": "Displays basic information about the project in this directory",
+  "main": "projinfo.js",
+  "bin": {
+    "projinfo": "projinfo.js"
+  },
+  "keywords": [],
+  "author": "Michiel Sikma <michiel@sikma.org>",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^2.4.2"
+  }
+}
