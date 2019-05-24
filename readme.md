@@ -41,7 +41,7 @@ function check_node_project \
     and return
 
   # Displays project name, version, and a list of bin files, npm scripts and docs.
-  project.js
+  projinfo
 end
 ```
 
