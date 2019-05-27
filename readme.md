@@ -23,9 +23,7 @@ The script displays as much information as it's able to get. It reads data from 
 
 ### Running automatically on directory change
 
-This script should be set up so that it triggers automatically whenever entering a project folder. On Fish Shell it needs to run on a change of the `dirprev` variable.
-
-To set up a trigger so that this script gets run whenever entering a project folder, on Fish Shell it needs to run on a change of the 'dirprev' variable:
+This script should be set up so that it triggers automatically whenever entering a project folder. On Fish Shell it needs to run on a change of the `dirprev` variable:
 
 ```fish
 function check_node_project \
