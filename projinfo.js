@@ -65,7 +65,7 @@ const reportProject = (projectData, separator) => {
   printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel)
 
   // Now print the package scripts, binaries and doc files.
-  const rows = getColumns(allPackages || [], scripts || [], bins || [], docs, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType)
+  const rows = getColumns(allPackages || [], scripts ? Object.keys(scripts) : [], bins || [], docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType)
   if (rows.length) {
     printTable(rows, separator)
     // Finally, end with one extra blank line.
@@ -74,7 +74,7 @@ const reportProject = (projectData, separator) => {
 }
 
 /** Returns a list of what items to print in the three columns. */
-const getColumns = (packages, scripts, bins, docs, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType) => {
+const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType) => {
   const rows = []
 
   if (packageManager === 'python') {
@@ -86,7 +86,7 @@ const getColumns = (packages, scripts, bins, docs, packageManager, otherFiles, p
         `install -r requirements.txt`
       ])
     }
-    if (otherFiles['setup.py']) {
+    else if (otherFiles['setup.py']) {
       rows.push([
         chalk.blue,
         'head',
@@ -107,14 +107,25 @@ const getColumns = (packages, scripts, bins, docs, packageManager, otherFiles, p
     }
   }
 
-  if (isMonorepo) {
-    rows.push([
-      chalk.blue,
-      'head',
-      monorepoType,
-      `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`
-    ])
+  if (type === 'node') {
+    if (isMonorepo) {
+      rows.push([
+        chalk.blue,
+        'head',
+        monorepoType,
+        `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`
+      ])
+    }
+    else {
+      rows.push([
+        chalk.blue,
+        'head',
+        packageManager,
+        `install`
+      ])
+    }
   }
+
 
   // Determine the longest list out of run, bin, doc.
   const longest = [scripts, bins, docs].reduce((max, curr) => Math.max(max, curr.length), 0)
