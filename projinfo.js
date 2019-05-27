@@ -47,15 +47,15 @@ const main = () => {
     ...pkgData,
     ...getMonorepoData(cwd, pkgData),
     ...getDocs(cwd),
-    ...getBins(pkgData),
+    ...getBins(cwd, pkgData),
     ...getCommit()
   }
-  return reportNodeProject(projectData, LINE)
+  return reportProject(projectData, LINE)
 }
 
-/** Prints project overview for a Node project. */
-const reportNodeProject = (projectData, separator) => {
-  const { commitDateISO, commitDateRel, type, allPackages, docs, bins, packageManager, isMonorepo, monorepoType } = projectData
+/** Prints project overview. */
+const reportProject = (projectData, separator) => {
+  const { commitDateISO, commitDateRel, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType } = projectData
   const { name, version, pythonVersion, description, homepage, scripts } = projectData.configData
 
   // Fall back to the Lerna version if the package doesn't have one.
@@ -65,7 +65,7 @@ const reportNodeProject = (projectData, separator) => {
   printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel)
 
   // Now print the package scripts, binaries and doc files.
-  const rows = getNodeColumns(allPackages || [], scripts || [], bins || [], docs, packageManager, isMonorepo, monorepoType)
+  const rows = getColumns(allPackages || [], scripts || [], bins || [], docs, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType)
   if (rows.length) {
     printTable(rows, separator)
     // Finally, end with one extra blank line.
@@ -74,16 +74,46 @@ const reportNodeProject = (projectData, separator) => {
 }
 
 /** Returns a list of what items to print in the three columns. */
-const getNodeColumns = (packages, scripts, bins, docs, packageManager, isMonorepo, monorepoType) => {
+const getColumns = (packages, scripts, bins, docs, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType) => {
   const rows = []
+
+  if (packageManager === 'python') {
+    if (otherFiles['requirements.txt']) {
+      rows.push([
+        chalk.blue,
+        'head',
+        `pip${pythonVersion === 3 ? '3' : ''}`,
+        `install -r requirements.txt`
+      ])
+    }
+    if (otherFiles['setup.py']) {
+      rows.push([
+        chalk.blue,
+        'head',
+        `python${pythonVersion === 3 ? '3' : ''}`,
+        `setup.py install`
+      ])
+    }
+  }
+
+  if (packageManager === 'php') {
+    if (otherFiles['composer.json']) {
+      rows.push([
+        chalk.blue,
+        'head',
+        `composer`,
+        `install`
+      ])
+    }
+  }
 
   if (isMonorepo) {
     rows.push([
       chalk.blue,
       'head',
       monorepoType,
-      `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`]
-    )
+      `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`
+    ])
   }
 
   // Determine the longest list out of run, bin, doc.
@@ -134,7 +164,7 @@ const printRow = (smallCol, smallColLength, largeCols, largeColLength, first, he
 /**
  * Prints the main project info table, consisting of project packages, scripts, bin and doc files.
  *
- * The table is printed using a table specification, which is produced by getNodeColumns().
+ * The table is printed using a table specification, which is produced by getColumns().
  * It has header rows and command rows. It should look like the following:
  *
  * [
