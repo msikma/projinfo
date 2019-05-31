@@ -38,6 +38,7 @@ const main = () => {
   // Load basic project info from JSON files.
   const cwd = process.cwd()
   const pkgData = getPkgData(cwd)
+  //console.log(pkgData)
 
   // Exit if we couldn't find any project info to print.
   if (!pkgData.isValid) return
@@ -116,16 +117,11 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`
       ])
     }
-    else {
-      rows.push([
-        chalk.blue,
-        'head',
-        packageManager,
-        `install`
-      ])
-    }
   }
 
+  // If we did not add a blue head row, we'll add the name of
+  // the package manager to the first command row.
+  const hasHeadRow = !!rows.find(r => r[1] === 'head')
 
   // Determine the longest list out of run, bin, doc.
   const longest = [scripts, bins, docs].reduce((max, curr) => Math.max(max, curr.length), 0)
@@ -135,7 +131,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
     const run = scripts[a]
     const bin = bins[a]
     const doc = docs[a]
-    rows.push([chalk.yellow, 'cmd', run ? run : null, bin ? bin : null, doc ? doc : null])
+    rows.push([chalk.yellow, 'cmd', !hasHeadRow && a === 0 ? packageManager : '', run ? run : null, bin ? bin : null, doc ? doc : null])
   }
 
   return rows
@@ -180,9 +176,9 @@ const printRow = (smallCol, smallColLength, largeCols, largeColLength, first, he
  *
  * [
  *   [chalk.blue, 'head', 'yarn', 'install (20 packages)']
- *   [chalk.yellow, 'cmd', compile', 'buyee-cli', 'readme.md'],
- *   [chalk.yellow, 'cmd', 'dev', 'marktplaats-cli', 'license.md'],
- *   [chalk.yellow, 'cmd', null, 'mlib', 'todo.md']
+ *   [chalk.yellow, 'cmd', '', 'compile', 'buyee-cli', 'readme.md'],
+ *   [chalk.yellow, 'cmd', '', 'dev', 'marktplaats-cli', 'license.md'],
+ *   [chalk.yellow, 'cmd', '', null, 'mlib', 'todo.md']
  * ]
  *
  * Null values are a dash if they appear on the first line, an empty string otherwise.
@@ -192,16 +188,16 @@ const printTable = (rows, separator) => {
   const smallMin = 3
   const largeMin = 23
   // Calculate the lengths of the columns. Defaults are 3 and 23 (not counting padding).
-  const smallColLength = rows.reduce((l, curr) => Math.max(curr[1] === 'head' ? (curr[2] || '').length : 0, l), smallMin)
-  const largeColLength = rows.reduce((l, curr) => Math.max((curr[2] || '').length, (curr[3] || '').length, (curr[4] || '').length, l), largeMin)
+  const smallColLength = rows.reduce((l, curr) => Math.max((curr[2] || '').length, l), smallMin)
+  const largeColLength = rows.reduce((l, curr) => Math.max((curr[3] || '').length, (curr[4] || '').length, (curr[5] || '').length, l), largeMin)
 
   let firstCmd = true
   for (let a = 0; a < rows.length; ++a) {
     const row = rows[a]
     const color = row[0]
     const isHead = row[1] === 'head'
-    const small = isHead ? row[2] : ''
-    const large = row.slice(isHead ? 3 : 2)
+    const small = row[2]
+    const large = row.slice(3)
     printRow(small, smallColLength, large, largeColLength, firstCmd, isHead, color, separator)
     if (!isHead && firstCmd) firstCmd = false
   }
