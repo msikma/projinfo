@@ -95,6 +95,14 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `setup.py install`
       ])
     }
+    else if (otherFiles['setup.cfg']) {
+      rows.push([
+        chalk.blue,
+        'head',
+        `pip${pythonVersion === 3 ? '3' : ''}`,
+        `install -e .`
+      ])
+    }
   }
 
   if (packageManager === 'php') {
