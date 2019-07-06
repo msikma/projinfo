@@ -16,7 +16,7 @@
 // See the readme.md file for setting up a trigger so this runs automatically on dir change.
 
 const chalk = require('chalk')
-const { getPkgData, getMonorepoData } = require('./lib/readcfg')
+const { getPkgData, getMonorepoData, getZeitData } = require('./lib/readcfg')
 const { getDocs, getBins, getCommit } = require('./lib/files')
 const { strLimit } = require('./lib/str')
 
@@ -46,6 +46,9 @@ const main = () => {
   // If this is a valid project, read the rest of the data and print the project overview.
   const projectData = {
     ...pkgData,
+    details: {
+      ...getZeitData(cwd)
+    },
     ...getMonorepoData(cwd, pkgData),
     ...getDocs(cwd),
     ...getBins(cwd, pkgData),
@@ -56,17 +59,17 @@ const main = () => {
 
 /** Prints project overview. */
 const reportProject = (projectData, separator) => {
-  const { commitDateISO, commitDateRel, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType } = projectData
+  const { commitDateISO, commitDateRel, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType, details } = projectData
   const { name, version, pythonVersion, description, homepage, scripts } = projectData.configData
 
   // Fall back to the Lerna version if the package doesn't have one.
   const lernaVersion = projectData.lernaData ? projectData.lernaData.version : null
 
   // Print the header and last commit info if available.
-  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel)
+  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel, details)
 
   // Now print the package scripts, binaries and doc files.
-  const rows = getColumns(allPackages || [], scripts ? Object.keys(scripts) : [], bins || [], docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType)
+  const rows = getColumns(allPackages || [], scripts ? Object.keys(scripts) : [], bins || [], docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType, details)
   if (rows.length) {
     printTable(rows, separator)
     // Finally, end with one extra blank line.
@@ -75,8 +78,12 @@ const reportProject = (projectData, separator) => {
 }
 
 /** Returns a list of what items to print in the three columns. */
-const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType) => {
+const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType, details) => {
   const rows = []
+  // In cases where more details about the package manager are needed,
+  // for example in a monorepo, the package manager name will not
+  // be printed on the first command row.
+  let addPackageManager = true
 
   if (packageManager === 'python') {
     if (otherFiles['requirements.txt']) {
@@ -86,6 +93,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `pip${pythonVersion === 3 ? '3' : ''}`,
         `install -r requirements.txt`
       ])
+      addPackageManager = false
     }
     else if (otherFiles['setup.py']) {
       rows.push([
@@ -94,6 +102,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `python${pythonVersion === 3 ? '3' : ''}`,
         `setup.py install`
       ])
+      addPackageManager = false
     }
     else if (otherFiles['setup.cfg']) {
       rows.push([
@@ -102,6 +111,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `pip${pythonVersion === 3 ? '3' : ''}`,
         `install -e .`
       ])
+      addPackageManager = false
     }
   }
 
@@ -113,6 +123,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         `composer`,
         `install`
       ])
+      addPackageManager = false
     }
   }
 
@@ -124,12 +135,24 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
         monorepoType,
         `${monorepoType === 'yarn' ? 'install' : 'bootstrap'} (${packages.length} packages)`
       ])
+      addPackageManager = false
+    }
+    if (details.isNow) {
+      rows.push([
+        chalk.blue,
+        'head',
+        'now',
+        'deploy'
+      ])
+      rows.push([
+        chalk.blue,
+        'head',
+        '',
+        'dev'
+      ])
+      addPackageManager = true
     }
   }
-
-  // If we did not add a blue head row, we'll add the name of
-  // the package manager to the first command row.
-  const hasHeadRow = !!rows.find(r => r[1] === 'head')
 
   // Determine the longest list out of run, bin, doc.
   const longest = [scripts, bins, docs].reduce((max, curr) => Math.max(max, curr.length), 0)
@@ -139,7 +162,7 @@ const getColumns = (packages, scripts, bins, docs, type, packageManager, otherFi
     const run = scripts[a]
     const bin = bins[a]
     const doc = docs[a]
-    rows.push([chalk.yellow, 'cmd', !hasHeadRow && a === 0 ? packageManager : '', run ? run : null, bin ? bin : null, doc ? doc : null])
+    rows.push([chalk.yellow, 'cmd', addPackageManager && a === 0 ? packageManager : '', run ? run : null, bin ? bin : null, doc ? doc : null])
   }
 
   return rows
@@ -217,10 +240,12 @@ const printTable = (rows, separator) => {
  *    project-name (1.0.0, Python) <https://github.com/foo/bar>
  *    Project description goes here
  *    2018-12-13 18:19:38 +0100 (4 months ago)
+ *    Deployment alias: nextjs-mysql.now.sh
  *
- * Includes leading and trailing linebreaks.
+ * Includes leading and trailing linebreaks. Sections that are not relevant for
+ * a specific project are not included.
  */
-const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel) => {
+const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel, details) => {
   console.log([
     `\n`,
     name ? chalk.red(name) : 'Unknown project',
@@ -228,6 +253,7 @@ const printHeader = (name, version, type, typeVersion, description, homepage, da
     homepage ? chalk.blue(` <${chalk.underline(homepage)}>`) : ``,
     description ? `\n${chalk.green(description)}` : ``,
     dateISO ? `\n${chalk.yellow(`Last commit: ${dateISO} (${dateRel})`)}` : ``,
+    details.isNow && details.nowAlias ? `\n${chalk.blue(`Deployment alias: ${details.nowAlias}`)}` : ``,
     '\n'
   ].join(''))
 }
