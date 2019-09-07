@@ -4,22 +4,15 @@ Displays basic information about the project in the current directory.
 
 Example output:
 
-```
-msikma-lib-projects (1.0.0) <https://github.com/msikma/msikma-lib-projects>
-Monorepo container for msikma-lib-projects, containing a number of client libraries
-Branch: master-13; last commit: 2018-10-14 22:29:35 +0200 (63 minutes ago)
+![Screenshot of projinfo output](assets/projinfo_output.png?raw=true)
 
-lerna | bootstrap (20 packages) |
- yarn │ run compile             │ bin buyee-cli           │ doc readme.md
-      │     dev                 │     marktplaats-cli     │     license.md
-      │                         │     mlib                │     todo.md
-```
+The script displays as much information as it's able to get. It uses the following filetypes to produce its output:
 
-The script displays as much information as it's able to get. It reads data from the following filetypes:
-
-* `package.json`, `lerna.json`, `yarn.lock` - Javascript/Node
-* `setup.py`, `setup.cfg` - Python
-* `composer.json` - PHP
+* Javascript/Node - `package.json`, `yarn.lock`, `lerna.json`
+* Python 2/3 - `setup.py`, `setup.cfg`, `requirements.txt`
+* PHP - `composer.json`
+* ZEIT Now - `now.json`
+* Documentation - `.md`, `.rst`, `.txt`
 
 ### Running automatically on directory change
 
