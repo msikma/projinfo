@@ -7,7 +7,7 @@ Example output:
 ```
 msikma-lib-projects (1.0.0) <https://github.com/msikma/msikma-lib-projects>
 Monorepo container for msikma-lib-projects, containing a number of client libraries
-Last commit: 2018-10-14 22:29:35 +0200 (63 minutes ago)
+Branch: master-13; last commit: 2018-10-14 22:29:35 +0200 (63 minutes ago)
 
 lerna | bootstrap (20 packages) |
  yarn │ run compile             │ bin buyee-cli           │ doc readme.md
