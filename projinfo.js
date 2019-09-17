@@ -59,14 +59,14 @@ const main = () => {
 
 /** Prints project overview. */
 const reportProject = (projectData, separator) => {
-  const { commitDateISO, commitDateRel, commitBranch, commitCommits, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType, details } = projectData
+  const { commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType, details } = projectData
   const { name, version, pythonVersion, description, homepage, scripts } = projectData.configData
 
   // Fall back to the Lerna version if the package doesn't have one.
   const lernaVersion = projectData.lernaData ? projectData.lernaData.version : null
 
   // Print the header and last commit info if available.
-  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel, commitBranch, commitCommits, details)
+  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, details)
 
   // Now print the package scripts, binaries and doc files.
   const rows = getColumns(allPackages || [], scripts ? Object.keys(scripts) : [], bins || [], docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType, details)
@@ -245,13 +245,13 @@ const printTable = (rows, separator) => {
  * Includes leading and trailing linebreaks. Sections that are not relevant for
  * a specific project are not included.
  */
-const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel, branch, commits, details) => {
+const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel, branch, commits, isInitial, details) => {
   const typeString = [
     ...(version ? [version] : []),
     ...(type ? [`${TYPES[type]}${typeVersion ? ` ${typeVersion}` : ''}`] : [])
   ].join(', ')
   const commitString = [
-    ...(branch ? [`Branch: ${branch}-${commits}`] : []),
+    ...(branch ? [`Branch: ${branch}-${commits}${isInitial ? chalk.yellowBright(' (initial commit)') : ''}`] : []),
     `${branch ? 'l' : 'L'}ast commit: ${dateISO} (${dateRel})`
   ].join('; ')
   console.log([
