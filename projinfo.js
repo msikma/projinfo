@@ -59,14 +59,14 @@ const main = () => {
 
 /** Prints project overview. */
 const reportProject = (projectData, separator) => {
-  const { commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType, details } = projectData
+  const { commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, commitExistsButIsEmpty, type, otherFiles, allPackages, docs, bins, packageManager, isMonorepo, monorepoType, details } = projectData
   const { name, version, pythonVersion, description, homepage, scripts } = projectData.configData
 
   // Fall back to the Lerna version if the package doesn't have one.
   const lernaVersion = projectData.lernaData ? projectData.lernaData.version : null
 
   // Print the header and last commit info if available.
-  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, details)
+  printHeader(name, version || lernaVersion, type, pythonVersion, description, homepage, commitDateISO, commitDateRel, commitBranch, commitCommits, commitIsInitial, commitExistsButIsEmpty, details)
 
   // Now print the package scripts, binaries and doc files.
   const rows = getColumns(allPackages || [], scripts ? Object.keys(scripts) : [], bins || [], docs, type, packageManager, otherFiles, pythonVersion, isMonorepo, monorepoType, details)
@@ -245,7 +245,7 @@ const printTable = (rows, separator) => {
  * Includes leading and trailing linebreaks. Sections that are not relevant for
  * a specific project are not included.
  */
-const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel, branch, commits, isInitial, details) => {
+const printHeader = (name, version, type, typeVersion, description, homepage, dateISO, dateRel, branch, commits, isInitial, isEmpty, details) => {
   const typeString = [
     ...(version ? [version] : []),
     ...(type ? [`${TYPES[type]}${typeVersion ? ` ${typeVersion}` : ''}`] : [])
@@ -260,6 +260,7 @@ const printHeader = (name, version, type, typeVersion, description, homepage, da
     version || type ? chalk.magenta(` (${typeString})`) : ``,
     homepage ? chalk.blue(` <${chalk.underline(homepage)}>`) : ``,
     description ? `\n${chalk.green(description)}` : ``,
+    isEmpty && !dateISO ? `\n${chalk.yellowBright('Git repo exists but has no commits')}` : ``,
     dateISO ? `\n${chalk.yellow(commitString)}` : ``,
     details.isNow && details.nowAlias ? `\n${chalk.blue(`Deployment alias: ${details.nowAlias}`)}` : ``,
     '\n'
