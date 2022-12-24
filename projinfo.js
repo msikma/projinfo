@@ -34,7 +34,7 @@ const TYPES = {
  * Main script entry point. Reads data from the current directory and prints project info.
  * Currently only Node packages are supported.
  */
-const main = () => {
+const main = async () => {
   // Load basic project info from JSON files.
   const cwd = process.cwd()
   const pkgData = getPkgData(cwd)
@@ -51,7 +51,7 @@ const main = () => {
     },
     ...getMonorepoData(cwd, pkgData),
     ...getDocs(cwd),
-    ...getBins(cwd, pkgData),
+    ...await getBins(cwd, pkgData),
     ...getCommit()
   }
   return reportProject(projectData, LINE)
